@@ -1,6 +1,11 @@
 name: Build-K2P-5.0-Minimal
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/Build-K2P-5.0-Minimal.yml'
+      - 'trunk/configs/templates/K2P-5.0.config'
   workflow_dispatch:
 
 jobs:
@@ -31,10 +36,7 @@ jobs:
           exit 1
         fi
         cp -f configs/templates/K2P-5.0.config .config
-        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_VLMCSD=y/CONFIG_FIRMWARE_INCLUDE_VLMCSD=n/' .config
-        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_XUPNPD=y/CONFIG_FIRMWARE_INCLUDE_XUPNPD=n/' .config
-        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_MSD_LITE=y/CONFIG_FIRMWARE_INCLUDE_MSD_LITE=n/' .config
-        echo "==== final .config (changed lines) ===="
+        echo "==== final .config (key lines) ===="
         grep -E 'WIFI_DRIVER|SFE|IPV6|USB=|VLMCSD|XUPNPD|MSD_LITE|OPENSSH|DROPBEAR=' .config
 
     - name: Build firmware
