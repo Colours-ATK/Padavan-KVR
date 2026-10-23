@@ -1,0 +1,52 @@
+name: Build-K2P-5.0-Minimal
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Init environment
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+        cpio git python-docutils gettext automake autopoint texinfo build-essential help2man \
+        pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
+
+    - name: Download toolchain
+      run: |
+        cd toolchain-mipsel
+        sh dl_toolchain.sh
+        mkdir -p /opt/images/
+
+    - name: Prepare minimal config (K2P-5.0: SFE+IPv6, no extra daemons)
+      run: |
+        cd trunk
+        if [ ! -f configs/templates/K2P-5.0.config ]; then
+          echo "configs/templates/K2P-5.0.config not found"
+          exit 1
+        fi
+        cp -f configs/templates/K2P-5.0.config .config
+        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_VLMCSD=y/CONFIG_FIRMWARE_INCLUDE_VLMCSD=n/' .config
+        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_XUPNPD=y/CONFIG_FIRMWARE_INCLUDE_XUPNPD=n/' .config
+        sed -i 's/^CONFIG_FIRMWARE_INCLUDE_MSD_LITE=y/CONFIG_FIRMWARE_INCLUDE_MSD_LITE=n/' .config
+        echo "==== final .config (changed lines) ===="
+        grep -E 'WIFI_DRIVER|SFE|IPV6|USB=|VLMCSD|XUPNPD|MSD_LITE|OPENSSH|DROPBEAR=' .config
+
+    - name: Build firmware
+      run: |
+        cd trunk
+        sudo ./clear_tree
+        sudo ./build_firmware_modify K2P-5.0 0
+        sudo mv -f images/*.trx /opt/images/
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: K2P-padavan-5.0.4.0-minimal
+        path: /opt/images/
